@@ -35,6 +35,19 @@ function App() {
   const [xAxisMetric, setXAxisMetric] = useState('date');
   const [yAxisMetric, setYAxisMetric] = useState('cph');
 
+  // Load saved data on component mount
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('productivityHistory');
+    if (savedHistory) {
+      setSubmissionHistory(JSON.parse(savedHistory));
+    }
+  }, []);
+
+  // Save data when submissionHistory changes
+  useEffect(() => {
+    localStorage.setItem('productivityHistory', JSON.stringify(submissionHistory));
+  }, [submissionHistory]);
+
   // Calculate Cartons Processed (Pallets × 25)
   useEffect(() => {
     const pallets = parseFloat(processed) || 0;
@@ -89,23 +102,22 @@ function App() {
     setIsSubmitting(true);
     
     const newEntry = {
+      id: Date.now(),
       date: selectedDate,
-      remainingPallets: remaining,
-      palletsDelivered: delivered,
-      cartonsProcessed: cartonsProcessed,
-      cph: cphResult,
-      zph: zphResult,
-      hoursWorked: extraInput
+      carriedOver: parseFloat(carriedOver) || 0,
+      palletsDelivered: parseFloat(delivered) || 0,
+      remainingPallets: parseFloat(remaining) || 0,
+      palletsProcessed: parseFloat(processed) || 0,
+      cartonsProcessed: parseFloat(cartonsProcessed) || 0,
+      cph: parseFloat(cphResult) || 0,
+      zph: parseFloat(zphResult) || 0,
+      hoursWorked: parseFloat(extraInput) || 0,
+      timestamp: new Date(selectedDate).getTime()
     };
 
-    // Add new entry and sort by date
-    const updatedHistory = [...submissionHistory, newEntry].sort((a, b) => {
-      return new Date(a.date) - new Date(b.date);
-    });
-    
+    const updatedHistory = [...submissionHistory, newEntry];
     setSubmissionHistory(updatedHistory);
-
-    console.log('Submitting data:', newEntry);
+    
     setTimeout(() => {
       setIsSubmitting(false);
       setSubmitSuccess(true);
@@ -126,30 +138,39 @@ function App() {
     ];
   };
 
-  // Process data for the graph
+  // Process data for the graph with proper sorting
   const getGraphData = () => {
-    // Data is already sorted in the submissionHistory state
-    return submissionHistory.map(entry => {
-      // Parse numeric values for proper rendering
-      const processedEntry = {...entry};
-      if (xAxisMetric !== 'date') {
-        processedEntry[xAxisMetric] = parseFloat(entry[xAxisMetric]);
-      }
-      if (yAxisMetric !== 'date') {
-        processedEntry[yAxisMetric] = parseFloat(entry[yAxisMetric]);
-      }
-      return processedEntry;
-    });
+    // Create a copy of the data
+    let graphData = [...submissionHistory];
+    
+    // Sort differently based on x-axis metric
+    if (xAxisMetric === 'date') {
+      // Sort by timestamp for dates (chronological)
+      graphData.sort((a, b) => a.timestamp - b.timestamp);
+    } else {
+      // Sort by numeric value for other metrics (ascending)
+      graphData.sort((a, b) => a[xAxisMetric] - b[xAxisMetric]);
+    }
+
+    // Format dates for display
+    return graphData.map(entry => ({
+      ...entry,
+      date: new Date(entry.date).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric'
+      })
+    }));
   };
 
   return (
     <div className="container mt-4">
-      <h2 className="text-center mb-4">Productivity Calculator</h2>
+      <h2 className="text-center mb-4">Productivity Dashboard</h2>
+      
       <div className="row g-3">
         {/* Container 1: Pallets Calculator */}
         <div className="col-md-4">
           <form onSubmit={handleCalculateProcessed} className="p-3 border rounded h-100 bg-light">
-            <h5 className="text">Pallets Calculator</h5>
+            <h5 className="text-primary">Pallets Calculator</h5>
             <div className="row g-2">
               <div className="col-md-6 mb-3">
                 <label className="form-label">Carried-Over</label>
@@ -189,7 +210,7 @@ function App() {
               />
             </div>
             {error1 && <div className="alert alert-danger">{error1}</div>}
-            <button type="submit" className="btn w-100 mb-3 custom-btn">
+            <button type="submit" className="btn custom-btn w-100 mb-3">
               Calculate Processed
             </button>
             <div className="mb-3">
@@ -207,7 +228,7 @@ function App() {
         {/* Container 2: CPH Calculator */}
         <div className="col-md-4">
           <form onSubmit={handleCphCalculate} className="p-3 border rounded h-100 bg-light">
-            <h5 className="text">CPH Calculator</h5>
+            <h5 className="text-success">CPH Calculator</h5>
             <div className="mb-3">
               <label className="form-label">Cartons Processed (Pallets × 25)</label>
               <input
@@ -230,7 +251,7 @@ function App() {
               />
             </div>
             {error2 && <div className="alert alert-danger">{error2}</div>}
-            <button type="submit" className="btn w-100 mb-3 custom-btn">
+            <button type="submit" className="btn custom-btn w-100 mb-3">
               Calculate CPH
             </button>
             <div className="mb-3">
@@ -248,7 +269,7 @@ function App() {
         {/* Container 3: ZPH Calculator */}
         <div className="col-md-4">
           <form onSubmit={handleZphCalculate} className="p-3 border rounded h-100 bg-light">
-            <h5 className="text">ZPH Calculator</h5>
+            <h5 className="text-info">ZPH Calculator</h5>
             <div className="mb-3">
               <label className="form-label">Z-Racks Filled</label>
               <input
@@ -274,7 +295,7 @@ function App() {
               />
             </div>
             {error3 && <div className="alert alert-danger">{error3}</div>}
-            <button type="submit" className="btn w-100 mb-3 custom-btn">
+            <button type="submit" className="btn custom-btn w-100 mb-3">
               Calculate ZPH
             </button>
             <div className="mb-3">
@@ -323,7 +344,8 @@ function App() {
               <div className="col-md-6 mb-3">
                 {submitSuccess && (
                   <div className="alert alert-success mb-0">
-                    Data submitted successfully for {selectedDate}!
+                    <i className="fas fa-check-circle me-2"></i>
+                    Data submitted successfully!
                   </div>
                 )}
               </div>
@@ -334,27 +356,37 @@ function App() {
         {/* Container 5: Submission History */}
         <div className="col-md-12 mt-4">
           <div className="p-3 border rounded bg-light">
-            <h5 className="text-secondary mb-3">Submission History</h5>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="text-secondary mb-0">Submission History</h5>
+              {submissionHistory.length > 0 && (
+                <small className="text-muted">
+                  Showing {submissionHistory.length} records
+                </small>
+              )}
+            </div>
+            
             {submissionHistory.length > 0 ? (
               <div className="table-responsive">
-                <table className="table table-striped table-hover">
-                  <thead>
+                <table className="table table-hover align-middle">
+                  <thead className="table-light">
                     <tr>
                       <th>Date</th>
-                      <th>Remaining Pallets</th>
-                      <th>Pallets Delivered</th>
-                      <th>Cartons Processed</th>
+                      <th>Carried Over</th>
+                      <th>Delivered</th>
+                      <th>Remaining</th>
+                      <th>Cartons</th>
                       <th>CPH</th>
                       <th>ZPH</th>
-                      <th>Hours Worked</th>
+                      <th>Hours</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {submissionHistory.map((entry, index) => (
-                      <tr key={index}>
-                        <td>{entry.date}</td>
-                        <td>{entry.remainingPallets}</td>
+                    {submissionHistory.map((entry) => (
+                      <tr key={entry.id}>
+                        <td>{new Date(entry.date).toLocaleDateString()}</td>
+                        <td>{entry.carriedOver}</td>
                         <td>{entry.palletsDelivered}</td>
+                        <td>{entry.remainingPallets}</td>
                         <td>{entry.cartonsProcessed}</td>
                         <td>{entry.cph}</td>
                         <td>{entry.zph}</td>
@@ -365,8 +397,9 @@ function App() {
                 </table>
               </div>
             ) : (
-              <div className="alert alert-info">
-                No submissions yet. Data will appear here after submission.
+              <div className="alert alert-info mb-0">
+                <i className="fas fa-info-circle me-2"></i>
+                No submissions yet. Data will persist after page reloads.
               </div>
             )}
           </div>
@@ -376,7 +409,7 @@ function App() {
         <div className="col-md-12 mt-4">
           <div className="p-3 border rounded bg-light">
             <h5 className="text-secondary mb-3">Data Visualization</h5>
-            {submissionHistory.length > 0 ? (
+            {submissionHistory.length > 1 ? (
               <>
                 <div className="row mb-4">
                   <div className="col-md-5">
@@ -417,10 +450,21 @@ function App() {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis 
                         dataKey={xAxisMetric}
-                        label={{ value: getMetricOptions().find(option => option.value === xAxisMetric)?.label, position: 'insideBottomRight', offset: -10 }}
+                        type={xAxisMetric === 'date' ? 'category' : 'number'}
+                        label={{ 
+                          value: getMetricOptions().find(option => option.value === xAxisMetric)?.label,
+                          position: 'insideBottomRight',
+                          offset: -10
+                        }}
+                        domain={xAxisMetric === 'date' ? undefined : ['dataMin', 'dataMax']}
                       />
                       <YAxis 
-                        label={{ value: getMetricOptions().find(option => option.value === yAxisMetric)?.label, angle: -90, position: 'insideLeft' }}
+                        label={{ 
+                          value: getMetricOptions().find(option => option.value === yAxisMetric)?.label,
+                          angle: -90,
+                          position: 'insideLeft'
+                        }}
+                        domain={['dataMin', 'dataMax']}
                       />
                       <Tooltip />
                       <Legend />
@@ -435,8 +479,14 @@ function App() {
                   </ResponsiveContainer>
                 </div>
               </>
+            ) : submissionHistory.length === 1 ? (
+              <div className="alert alert-info">
+                <i className="fas fa-info-circle me-2"></i>
+                Submit at least 2 entries to generate a meaningful graph.
+              </div>
             ) : (
               <div className="alert alert-info">
+                <i className="fas fa-info-circle me-2"></i>
                 No data available for visualization. Submit data to see the graph.
               </div>
             )}
