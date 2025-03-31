@@ -26,25 +26,111 @@ body {
   margin-bottom: 15px;
 }
 
-/* Keep your existing button styles */
+/* Custom Button Styles */
 .custom-btn {
-  background-color: #d98a33 !important;
-  border-color: #d98a33 !important;
-  color: white !important;
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  background-color: #d98a33;
+  color: white;
+  border: none;
+  transition: all 0.2s ease;
 }
 
 .custom-btn:hover {
-  background-color: #c07a2b !important;
-  border-color: #c07a2b !important;
+  background-color: #c07a2b;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* extra polish */
-.container {
-  backdrop-filter: blur(2px); /* Frosted glass effect */
-  border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border */
+.custom-btn:active {
+  transform: translateY(0);
 }
 
+.custom-btn:disabled {
+  background-color: #cccccc;
+  transform: none;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Modal Styles */
+.modal.show {
+  display: block;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  border: none;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Table Styles */
 .table {
-  background-color: rgba(255, 255, 255, 0.8) !important; /* Better table readability */
+  margin-bottom: 0;
+}
+
+.table thead th {
+  border-bottom: 2px solid #dee2e6;
+  font-weight: 600;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Form Styles */
+.form-control:focus {
+  border-color: #d98a33;
+  box-shadow: 0 0 0 0.25rem rgba(217, 138, 51, 0.25);
+}
+
+/* Alert Styles */
+.alert {
+  border: none;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.alert-info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .col-md-4 {
+    margin-bottom: 1.5rem;
+  }
+  
+  .modal-dialog {
+    margin: 0.5rem auto;
+  }
+}
+
+/* Animation for Success Message */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.alert-success {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Tooltip Styles */
+.tooltip {
+  font-size: 0.9rem;
+}
+
+/* Graph Tooltip Customization */
+.recharts-tooltip-label {
+  color: #d98a33;
+  font-weight: bold;
 }
