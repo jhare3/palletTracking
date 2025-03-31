@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 function App() {
   // Container 1: Pallets Calculator State
@@ -29,6 +30,10 @@ function App() {
 
   // Container 5: History State
   const [submissionHistory, setSubmissionHistory] = useState([]);
+
+  // Container 6: Graph Configuration State
+  const [xAxisMetric, setXAxisMetric] = useState('date');
+  const [yAxisMetric, setYAxisMetric] = useState('cph');
 
   // Calculate Cartons Processed (Pallets × 25)
   useEffect(() => {
@@ -93,7 +98,12 @@ function App() {
       hoursWorked: extraInput
     };
 
-    setSubmissionHistory([...submissionHistory, newEntry]);
+    // Add new entry and sort by date
+    const updatedHistory = [...submissionHistory, newEntry].sort((a, b) => {
+      return new Date(a.date) - new Date(b.date);
+    });
+    
+    setSubmissionHistory(updatedHistory);
 
     console.log('Submitting data:', newEntry);
     setTimeout(() => {
@@ -101,6 +111,35 @@ function App() {
       setSubmitSuccess(true);
       setTimeout(() => setSubmitSuccess(false), 3000);
     }, 1500);
+  };
+
+  // Get list of available metrics for drop-downs
+  const getMetricOptions = () => {
+    return [
+      { value: 'date', label: 'Date' },
+      { value: 'remainingPallets', label: 'Remaining Pallets' },
+      { value: 'palletsDelivered', label: 'Pallets Delivered' },
+      { value: 'cartonsProcessed', label: 'Cartons Processed' },
+      { value: 'cph', label: 'CPH' },
+      { value: 'zph', label: 'ZPH' },
+      { value: 'hoursWorked', label: 'Hours Worked' }
+    ];
+  };
+
+  // Process data for the graph
+  const getGraphData = () => {
+    // Data is already sorted in the submissionHistory state
+    return submissionHistory.map(entry => {
+      // Parse numeric values for proper rendering
+      const processedEntry = {...entry};
+      if (xAxisMetric !== 'date') {
+        processedEntry[xAxisMetric] = parseFloat(entry[xAxisMetric]);
+      }
+      if (yAxisMetric !== 'date') {
+        processedEntry[yAxisMetric] = parseFloat(entry[yAxisMetric]);
+      }
+      return processedEntry;
+    });
   };
 
   return (
@@ -328,6 +367,77 @@ function App() {
             ) : (
               <div className="alert alert-info">
                 No submissions yet. Data will appear here after submission.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Container 6: Data Graph */}
+        <div className="col-md-12 mt-4">
+          <div className="p-3 border rounded bg-light">
+            <h5 className="text-secondary mb-3">Data Visualization</h5>
+            {submissionHistory.length > 0 ? (
+              <>
+                <div className="row mb-4">
+                  <div className="col-md-5">
+                    <label className="form-label">X-Axis Metric</label>
+                    <select 
+                      className="form-select"
+                      value={xAxisMetric}
+                      onChange={(e) => setXAxisMetric(e.target.value)}
+                    >
+                      {getMetricOptions().map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-5">
+                    <label className="form-label">Y-Axis Metric</label>
+                    <select 
+                      className="form-select"
+                      value={yAxisMetric}
+                      onChange={(e) => setYAxisMetric(e.target.value)}
+                    >
+                      {getMetricOptions().map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div style={{ width: '100%', height: 400 }}>
+                  <ResponsiveContainer>
+                    <LineChart
+                      data={getGraphData()}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey={xAxisMetric}
+                        label={{ value: getMetricOptions().find(option => option.value === xAxisMetric)?.label, position: 'insideBottomRight', offset: -10 }}
+                      />
+                      <YAxis 
+                        label={{ value: getMetricOptions().find(option => option.value === yAxisMetric)?.label, angle: -90, position: 'insideLeft' }}
+                      />
+                      <Tooltip />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey={yAxisMetric}
+                        name={getMetricOptions().find(option => option.value === yAxisMetric)?.label}
+                        stroke="#8884d8"
+                        activeDot={{ r: 8 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
+            ) : (
+              <div className="alert alert-info">
+                No data available for visualization. Submit data to see the graph.
               </div>
             )}
           </div>
