@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
+import Chatbot from './components/chatbot.js';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // Unique storage key to prevent conflicts
@@ -762,6 +763,7 @@ function App() {
           </div>
         </div>
       </div>
+      <Chatbot />
     </div>
   );
 }
